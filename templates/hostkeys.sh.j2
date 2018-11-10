@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+
+kinit -k -t /etc/krb5.keytab host/{{ ansible_fqdn }}
+
+echo -e "server {{ dns_servers|random }}\nupdate delete {{ ansible_fqdn }}. SSHFP\n$(ssh-keygen -r {{ ansible_fqdn }} | sed -E 's/([^ ]*) (.*)/update add \1. 3600 \2/g' )\nsend" | nsupdate -g
+RES=$?
+if [ $RES -eq 0 ] ; then
+   touch /etc/ssh/.dns
+fi
+
+kdestroy

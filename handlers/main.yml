@@ -1,0 +1,8 @@
+---
+  - name: reload dynamic_dns
+    become: True
+    service:
+      name: dynamic-dns.timer
+      state: restarted
+      enabled: yes
+      daemon_reload: yes

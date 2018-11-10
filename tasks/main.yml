@@ -1,0 +1,51 @@
+---
+  - name: Install dependencies
+    become: True
+    when: dns_store_ssh_fingerprint
+    apt:
+      state: present
+      update_cache: yes
+      cache_valid_time: 1800
+      name:
+        - dnsutils
+
+  - name: Upload DNS SSHFP script
+    become: True
+    when: dns_store_ssh_fingerprint
+    template:
+      src: hostkeys.sh.j2
+      dest: /etc/ssh/dns.sh
+      owner: root
+      group: root
+      mode: 0744
+
+  - name: Push SSHFP to DNS
+    become: True
+    when: dns_store_ssh_fingerprint
+    command: /etc/ssh/dns.sh
+    args:
+      creates: /etc/ssh/.dns
+
+  - name: Upload dynamic_dns script
+    become: True
+    when: dns_do_dynamic_dns
+    template:
+      src: dynamic_dns.sh.j2
+      dest: /usr/local/bin/dynamic_dns.sh
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Create systemd service and timer for dynamic_dns
+    become: True
+    when: dns_do_dynamic_dns
+    copy:
+      src: "{{ item }}"
+      dest: "/etc/systemd/system/{{ item }}"
+      owner: root
+      group: root
+      mode: 0644
+    notify: reload dynamic_dns
+    with_items:
+      - dynamic-dns.service
+      - dynamic-dns.timer

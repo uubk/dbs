@@ -1,0 +1,61 @@
+#!/bin/bash
+
+ME="{{ ansible_fqdn }}"
+SERVER="{{ dns_servers|random }}"
+STATEFILE_4="/tmp/.v4"
+STATEFILE_6="/tmp/.v6"
+TTL=60
+
+
+# Get IPv4
+for i in {1..10} ; do
+    IPV4="$(curl {{ dns_dyndns_v4 }} 2> /dev/null)"
+    RES=$?
+    if [ $RES -eq 0 -a -n "${IPV4}" ] ; then
+        echo "Got IPv4 ${IPV4}"
+
+        if [ -f $STATEFILE_4 -a "$(< ${STATEFILE_4})" == "${IPV4}" ] ; then
+            echo "IPv4 didn't change, doing nothing"
+        else
+            kinit -k -t /etc/krb5.keytab host/{{ ansible_fqdn }}
+            if [ -f $STATEFILE_4 ] ; then
+                echo -e "server ${SERVER}\nupdate delete ${ME}. ${TTL} in A $(< ${STATEFILE_4})\nsend\n" | nsupdate -g
+            fi
+            echo -e "server ${SERVER}\nupdate add ${ME}. ${TTL} in A ${IPV4}\nsend\n" | nsupdate -g
+            RES=$?
+            if [ $RES -eq 0 ] ; then
+                echo "IPv4 updated successfully"
+                echo "${IPV4}" > $STATEFILE_4
+            fi
+        fi
+        break
+    fi
+done
+
+# Get IPv6
+for i in {1..10} ; do
+    IPV6="$(curl {{ dns_dyndns_v6 }} 2> /dev/null)"
+    RES=$?
+    if [ $RES -eq 0 -a -n "${IPV6}" ] ; then
+        echo "Got IPv6 ${IPV6}"
+
+        if [ -f $STATEFILE_6 -a "$(< ${STATEFILE_6})" == "${IPV6}" ] ; then
+            echo "IPv6 didn't change, doing nothing"
+        else
+            kinit -k -t /etc/krb5.keytab host/{{ ansible_fqdn }}
+            if [ -f $STATEFILE_6 ] ; then
+                echo -e "server ${SERVER}\nupdate delete ${ME}. ${TTL} in AAAA $(< ${STATEFILE_6})\nsend\n" | nsupdate -g
+            fi
+            echo -e "server ${SERVER}\nupdate add ${ME}. ${TTL} in AAAA ${IPV6}\nsend\n" | nsupdate -g
+            RES=$?
+            if [ $RES -eq 0 ] ; then
+                echo "IPv6 updated successfully"
+                echo "${IPV6}" > $STATEFILE_6
+            fi
+        fi
+        break
+    fi
+done
+
+kdestroy || /bin/true
+# vim: set ts=4 sw=4 tw=80 et :

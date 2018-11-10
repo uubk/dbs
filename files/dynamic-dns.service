@@ -1,0 +1,9 @@
+[Unit]
+After=local-fs.target network.target
+Description=Refresh DNS entry with current IP
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/dynamic_dns.sh
+User=root
+Group=root
