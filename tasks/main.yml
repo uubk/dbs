@@ -1,13 +1,21 @@
 ---
   - name: Install dependencies
     become: True
-    when: dns_store_ssh_fingerprint
+    when: dns_store_ssh_fingerprint and ansible_distribution == "Debian"
     apt:
       state: present
       update_cache: yes
       cache_valid_time: 1800
       name:
         - dnsutils
+
+  - name: Install dependencies
+    become: True
+    when: dns_store_ssh_fingerprint and ansible_distribution == "Archlinux"
+    package:
+      state: present
+      name:
+        - bind-tools
 
   - name: Upload DNS SSHFP script
     become: True
