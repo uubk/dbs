@@ -1,7 +1,7 @@
 ---
   - name: Install dependencies
     become: True
-    when: dns_store_ssh_fingerprint and ansible_distribution == "Debian"
+    when: dns_store_ssh_fingerprint | bool and ansible_distribution == "Debian"
     apt:
       state: present
       update_cache: yes
@@ -11,7 +11,7 @@
 
   - name: Install dependencies
     become: True
-    when: dns_store_ssh_fingerprint and ansible_distribution == "Archlinux"
+    when: dns_store_ssh_fingerprint | bool and ansible_distribution == "Archlinux"
     package:
       state: present
       name:
@@ -19,7 +19,7 @@
 
   - name: Upload DNS SSHFP script
     become: True
-    when: dns_store_ssh_fingerprint
+    when: dns_store_ssh_fingerprint | bool
     template:
       src: hostkeys.sh.j2
       dest: /etc/ssh/dns.sh
@@ -29,14 +29,14 @@
 
   - name: Push SSHFP to DNS
     become: True
-    when: dns_store_ssh_fingerprint
+    when: dns_store_ssh_fingerprint | bool
     command: /etc/ssh/dns.sh
     args:
       creates: /etc/ssh/.dns
 
   - name: Upload dynamic_dns script
     become: True
-    when: dns_do_dynamic_dns
+    when: dns_do_dynamic_dns | bool
     template:
       src: dynamic_dns.sh.j2
       dest: /usr/local/bin/dynamic_dns.sh
@@ -46,7 +46,7 @@
 
   - name: Create systemd service and timer for dynamic_dns
     become: True
-    when: dns_do_dynamic_dns
+    when: dns_do_dynamic_dns | bool
     copy:
       src: "{{ item }}"
       dest: "/etc/systemd/system/{{ item }}"
